@@ -54,4 +54,9 @@ public class Ingredient {
   public void setDish(Dish dish) {
     this.dish = dish;
   }
+
+  // get dish name
+  public String getDishName () {
+    return dish.getName();
+  }
 }

@@ -47,4 +47,15 @@ public class Dish {
   public void setIngredients(List<Ingredient> ingredients) {
     this.ingredients = ingredients;
   }
+
+  // get dish price methods
+  public double getDishPrice() {
+    double total = 0;
+
+    for (Ingredient ingredient : ingredients) {
+      total += ingredient.getPrice();
+    }
+
+    return total;
+  }
 }
