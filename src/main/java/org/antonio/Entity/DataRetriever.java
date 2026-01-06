@@ -1,5 +1,7 @@
 package org.antonio.Entity;
 
+import org.postgresql.core.BaseConnection;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -50,5 +52,30 @@ public class DataRetriever {
     }
 
     return dish;
+  }
+
+  // find ingredients using pagination
+  public List<Ingredient> findIngredients (int page, int size) throws SQLException {
+    List<Ingredient> ingredients = new ArrayList<>();
+    int offset = (page - 1) * size;
+    String sqlQuery = "SELECT * FROM ingredient ORDER BY id LIMIT ? OFFSET ?";
+
+    try (Connection connection = DBConnection.getConnection();
+         PreparedStatement statement = connection.prepareStatement(sqlQuery)){
+      statement.setInt(1, size);
+      statement.setInt(2, offset);
+
+      try (ResultSet rs = statement.executeQuery()) {
+        while (rs.next()) {
+          Ingredient ingredient = new Ingredient();
+          ingredient.setId(rs.getInt("id"));
+          ingredient.setName(rs.getString("name"));
+          ingredient.setCategory(CategoryEnum.valueOf(rs.getString("category")));
+          ingredients.add(ingredient);
+        }
+      }
+    }
+
+    return ingredients;
   }
 }
