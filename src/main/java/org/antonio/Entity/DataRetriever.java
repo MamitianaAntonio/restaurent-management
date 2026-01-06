@@ -1,16 +1,11 @@
 package org.antonio.Entity;
 
-import org.postgresql.core.BaseConnection;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.math.BigDecimal;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class DataRetriever {
-
   // method to find dish by id
   public Dish findDishById(Integer id) throws SQLException {
     Dish dish = null;
@@ -77,5 +72,45 @@ public class DataRetriever {
     }
 
     return ingredients;
+  }
+
+  // verify if an ingredient exist
+  private boolean existsIngredient(Connection conn, String name) throws SQLException {
+    String sqlQuery = "SELECT COUNT(*) FROM Ingredient WHERE name = ?";
+    try (PreparedStatement stmt = conn.prepareStatement(sqlQuery)) {
+      stmt.setString(1, name);
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (rs.next()) {
+          return rs.getInt(1) > 0;
+        }
+      }
+    }
+    return false;
+  }
+
+  // method to create new ingredient with principle of atomicity
+  public List<Ingredient> createIngredients (List<Ingredient> newIngredient) throws SQLException{
+    List<Ingredient> createdIngredients = new ArrayList<>();
+    String sqlQuery = "INSERT INTO ingredient (name, category, price) VALUES (?, ?, ?)";
+
+    try(Connection connection = DBConnection.getConnection()){
+      connection.setAutoCommit(false);
+
+      try (PreparedStatement statement = connection.prepareStatement(sqlQuery)){
+        for (Ingredient ingredient : newIngredient) {
+          if (existsIngredient(connection, ingredient.getName())) {
+            throw new RuntimeException("Ingredient : " + ingredient.getName() + "  already exist");
+          }
+
+          statement.setString(1, ingredient.getName());
+          statement.setObject(2, ingredient.getCategory(), Types.OTHER);
+          statement.setDouble(3, ingredient.getPrice());
+          statement.executeUpdate();
+        }
+        connection.commit();
+      }
+    }
+
+    return newIngredient;
   }
 }
