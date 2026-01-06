@@ -1,10 +1,15 @@
 package org.antonio.Entity;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@Getter
+@Setter
 public class Dish {
-  private int id;
+  private Integer id;
   private String name;
   private DishTypeEnum dishType;
   private List<Ingredient> ingredients;
@@ -14,38 +19,6 @@ public class Dish {
     this.name = name;
     this.dishType = dishType;
     this.ingredients = new ArrayList<>();
-  }
-
-  public int getId() {
-    return id;
-  }
-
-  public void setId(int id) {
-    this.id = id;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public DishTypeEnum getDishType() {
-    return dishType;
-  }
-
-  public void setDishType(DishTypeEnum dishType) {
-    this.dishType = dishType;
-  }
-
-  public List<Ingredient> getIngredients() {
-    return ingredients;
-  }
-
-  public void setIngredients(List<Ingredient> ingredients) {
-    this.ingredients = ingredients;
   }
 
   // get dish price methods
