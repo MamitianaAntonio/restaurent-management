@@ -3,7 +3,7 @@ CREATE TYPE dish_type_enum AS ENUM ('START', 'MAIN', 'DESSERT');
 
 -- create table ingredient
 CREATE TABLE Ingredient (
-    id int PRIMARY KEY NOT NULL,
+    id SERIAL PRIMARY KEY NOT NULL,
     name VARCHAR(255) NOT NULL,
     price numeric(10,2),
     category category_enum,
@@ -14,7 +14,7 @@ CREATE TABLE Ingredient (
 
 -- create table dish
 CREATE TABLE Dish (
-    id int PRIMARY KEY NOT NULL,
+    id SERIAL PRIMARY KEY NOT NULL,
     name varchar(255) NOT NULL,
     dish_type dish_type_enum
 );
