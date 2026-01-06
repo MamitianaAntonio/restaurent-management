@@ -1,8 +1,10 @@
+import org.antonio.Entity.CategoryEnum;
 import org.antonio.Entity.DataRetriever;
 import org.antonio.Entity.Ingredient;
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -31,5 +33,32 @@ public class IngredientTest {
 
     Assertions.assertNotNull(ingredients);
     Assertions.assertTrue(ingredients.isEmpty());
+  }
+
+  @Test
+  public void createIngredients_shouldReturnFromageAndOignon () throws SQLException {
+    List<Ingredient> newIngredients = List.of(
+        new Ingredient("Fromage", CategoryEnum.DAIRY, 1200.0),
+        new Ingredient("Oignon", CategoryEnum.VEGETABLE, 500.0)
+    );
+
+    List<Ingredient> createdIngredients = dataRetriever.createIngredients(newIngredients);
+    Assertions.assertEquals("Fromage", createdIngredients.get(0).getName());
+    Assertions.assertEquals(CategoryEnum.DAIRY, createdIngredients.get(0).getCategory());
+    Assertions.assertEquals(1200.0, createdIngredients.get(0).getPrice());
+
+    Assertions.assertEquals("Oignon", createdIngredients.get(1).getName());
+    Assertions.assertEquals(CategoryEnum.VEGETABLE, createdIngredients.get(1).getCategory());
+    Assertions.assertEquals(500.0, createdIngredients.get(1).getPrice());
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void createIngredients_shouldThrowException_whenDuplicateIngredient() throws SQLException{
+    List<Ingredient> newIngredients = List.of(
+        new Ingredient("Carotte", CategoryEnum.VEGETABLE, 2000.0),
+        new Ingredient("Laitue", CategoryEnum.VEGETABLE, 2000.0)
+    );
+
+    dataRetriever.createIngredients(newIngredients);
   }
 }

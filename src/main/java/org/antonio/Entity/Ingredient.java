@@ -16,6 +16,13 @@ public class Ingredient {
   private CategoryEnum category;
   private Dish dish;
 
+  // constructor for the test
+  public Ingredient(String name, CategoryEnum category, Double price) {
+    this.name = name;
+    this.category = category;
+    this.price = price;
+  }
+
   // get dish name
   public String getDishName () {
     return dish.getName();
