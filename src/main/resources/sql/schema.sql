@@ -18,3 +18,17 @@ CREATE TABLE Dish (
     name varchar(255) NOT NULL,
     dish_type dish_type_enum
 );
+
+-- add new column : required_quantity if not exist
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name='ingredient'
+        AND column_name='required_quantity'
+    ) THEN
+ALTER TABLE Ingredient
+    ADD COLUMN required_quantity numeric(10,2) NULL;
+END IF;
+END $$;
