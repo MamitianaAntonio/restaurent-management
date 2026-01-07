@@ -113,4 +113,75 @@ public class DataRetriever {
 
     return newIngredient;
   }
+
+  // methods to save dish or update if it already exists
+  public Dish saveDish (Dish dishToSave) throws SQLException {
+    String insertDishSql = """
+        INSERT INTO dish (name, dish_type)
+        VALUES (?, ?)
+        RETURNING id
+    """;
+
+    String updateDishSql = """
+        UPDATE dish
+        SET name = ?, dish_type = ?
+        WHERE id = ?
+    """;
+
+    String existsLinkSql = """
+        SELECT 1 FROM ingredient
+        WHERE id = ? AND id_dish = ?
+    """;
+
+    String linkIngredientSql = """
+        UPDATE ingredient
+        SET id_dish = ?
+        WHERE id = ?
+    """;
+
+    try (Connection connection = DBConnection.getConnection()) {
+      connection.setAutoCommit(false);
+
+      if (dishToSave.getId() == null) {
+        try (PreparedStatement statement = connection.prepareStatement(insertDishSql)) {
+          statement.setString(1, dishToSave.getName());
+          statement.setObject(2, dishToSave.getDishType(), Types.OTHER);
+
+          ResultSet rs = statement.executeQuery();
+          if (rs.next()) {
+            dishToSave.setId(rs.getInt("id"));
+          }
+        }
+      } else {
+        try (PreparedStatement statement = connection.prepareStatement(updateDishSql)) {
+          statement.setString(1, dishToSave.getName());
+          statement.setObject(2, dishToSave.getDishType(), Types.OTHER);
+          statement.setInt(3, dishToSave.getId());
+          statement.executeUpdate();
+        }
+      }
+
+      for (Ingredient ingredient : dishToSave.getIngredients()) {
+        boolean alreadyLinked;
+
+        try (PreparedStatement checkStatement = connection.prepareStatement(existsLinkSql)) {
+          checkStatement.setInt(1, ingredient.getId());
+          checkStatement.setInt(2, dishToSave.getId());
+
+          ResultSet rs = checkStatement.executeQuery();
+          alreadyLinked = rs.next();
+        }
+
+        if (!alreadyLinked) {
+          try (PreparedStatement linkStatement = connection.prepareStatement(linkIngredientSql)) {
+            linkStatement.setInt(1, dishToSave.getId());
+            linkStatement.setInt(2, ingredient.getId());
+            linkStatement.executeUpdate();
+          }
+        }
+      }
+      connection.commit();
+      return dishToSave;
+    }
+  }
 }
