@@ -41,6 +41,7 @@ public class DataRetriever {
           ingredient.setName(rs.getString("ingredient_name"));
           ingredient.setPrice(rs.getDouble("price"));
           ingredient.setCategory(CategoryEnum.valueOf(rs.getString("category")));
+          ingredient.setRequiredQuantity(rs.getDouble("required_category"));
           ingredients.add(ingredient);
         }
       }
@@ -66,6 +67,7 @@ public class DataRetriever {
           ingredient.setId(rs.getInt("id"));
           ingredient.setName(rs.getString("name"));
           ingredient.setCategory(CategoryEnum.valueOf(rs.getString("category")));
+          ingredient.setRequiredQuantity(rs.getDouble("required_quantity"));
           ingredients.add(ingredient);
         }
       }
