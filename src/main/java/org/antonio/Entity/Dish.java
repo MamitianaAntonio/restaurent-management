@@ -35,4 +35,11 @@ public class Dish {
 
     return total;
   }
+
+  // new method
+  public double getDishCost () {
+    return ingredients.stream()
+        .mapToDouble(Ingredient::getPrice)
+        .sum();
+  }
 }

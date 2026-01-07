@@ -15,6 +15,7 @@ public class Ingredient {
   private Double price;
   private CategoryEnum category;
   private Dish dish;
+  private Double requiredQuantity;
 
   // constructor for the test
   public Ingredient(String name, CategoryEnum category, Double price) {

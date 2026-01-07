@@ -41,6 +41,7 @@ public class DataRetriever {
           ingredient.setName(rs.getString("ingredient_name"));
           ingredient.setPrice(rs.getDouble("price"));
           ingredient.setCategory(CategoryEnum.valueOf(rs.getString("category")));
+          ingredient.setRequiredQuantity(rs.getDouble("required_category"));
           ingredients.add(ingredient);
         }
       }
@@ -66,6 +67,7 @@ public class DataRetriever {
           ingredient.setId(rs.getInt("id"));
           ingredient.setName(rs.getString("name"));
           ingredient.setCategory(CategoryEnum.valueOf(rs.getString("category")));
+          ingredient.setRequiredQuantity(rs.getDouble("required_quantity"));
           ingredients.add(ingredient);
         }
       }
@@ -183,5 +185,99 @@ public class DataRetriever {
       connection.commit();
       return dishToSave;
     }
+  }
+
+  public List<Dish> findDishesByIngredientName(String ingredientName) throws SQLException {
+    List<Dish> dishes = new ArrayList<>();
+    String sql = """
+        SELECT DISTINCT d.id, d.name, d.dish_type
+        FROM dish d
+        JOIN ingredient i ON i.id_dish = d.id
+        WHERE i.name ILIKE ?
+    """;
+
+    try (Connection connection = DBConnection.getConnection();
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setString(1, "%" + ingredientName + "%");
+      ResultSet rs = statement.executeQuery();
+      while (rs.next()) {
+        Dish dish = new Dish();
+        dish.setId(rs.getInt("id"));
+        dish.setName(rs.getString("name"));
+        dish.setDishType(DishTypeEnum.valueOf(rs.getString("dish_type")));
+        dishes.add(dish);
+      }
+    }
+    return dishes;
+  }
+
+  // method to find ingredients by criteria
+  public List<Ingredient> findIngredientsByCriteria(
+      String ingredientName,
+      CategoryEnum category,
+      String dishName,
+      int page,
+      int size
+  ) throws SQLException {
+
+    List<Ingredient> ingredients = new ArrayList<>();
+    StringBuilder sql = new StringBuilder(
+        "SELECT i.id, i.name, i.price, i.category, i.id_dish, " +
+            "d.name AS dish_name, d.dish_type " +
+            "FROM ingredient i " +
+            "LEFT JOIN dish d ON i.id_dish = d.id " +
+            "WHERE 1=1"
+    );
+
+    if (ingredientName != null && !ingredientName.isEmpty()) {
+      sql.append(" AND i.name ILIKE ?");
+    }
+    if (category != null) {
+      sql.append(" AND i.category = ?");
+    }
+    if (dishName != null && !dishName.isEmpty()) {
+      sql.append(" AND d.name ILIKE ?");
+    }
+
+    sql.append(" ORDER BY i.id ASC LIMIT ? OFFSET ?");
+
+    try (Connection connection = DBConnection.getConnection();
+         PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+      int index = 1;
+      if (ingredientName != null && !ingredientName.isEmpty()) {
+        statement.setString(index++, "%" + ingredientName + "%");
+      }
+      if (category != null) {
+        statement.setString(index++, category.name());
+      }
+      if (dishName != null && !dishName.isEmpty()) {
+        statement.setString(index++, "%" + dishName + "%");
+      }
+
+      statement.setInt(index++, size);
+      statement.setInt(index, (page - 1) * size);
+
+      ResultSet rs = statement.executeQuery();
+      while (rs.next()) {
+        Ingredient ingredient = new Ingredient();
+        ingredient.setId(rs.getInt("id"));
+        ingredient.setName(rs.getString("name"));
+        ingredient.setPrice(rs.getDouble("price"));
+        ingredient.setCategory(CategoryEnum.valueOf(rs.getString("category")));
+
+        int idDish = rs.getInt("id_dish");
+        if (!rs.wasNull()) {
+          Dish dish = new Dish();
+          dish.setId(idDish);
+          dish.setName(rs.getString("dish_name"));
+          dish.setDishType(DishTypeEnum.valueOf(rs.getString("dish_type")));
+          ingredient.setDish(dish);
+        } else {
+          ingredient.setDish(null);
+        }
+        ingredients.add(ingredient);
+      }
+    }
+    return ingredients;
   }
 }
