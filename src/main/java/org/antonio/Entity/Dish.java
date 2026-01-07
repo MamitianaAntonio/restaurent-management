@@ -10,7 +10,6 @@ import java.util.List;
 
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
 public class Dish {
   private Integer id;
@@ -22,6 +21,10 @@ public class Dish {
     this.id = id;
     this.name = name;
     this.dishType = dishType;
+    this.ingredients = new ArrayList<>();
+  }
+
+  public Dish() {
     this.ingredients = new ArrayList<>();
   }
 
@@ -41,7 +44,7 @@ public class Dish {
     return ingredients.stream()
         .mapToDouble(ingredient -> {
           if (ingredient.getRequiredQuantity() == null) {
-            throw new IllegalStateException("It is impossible to calculate the cost of ingredient : " + ingredient.getName());
+            throw new IllegalStateException("It is impossible to calculate the cost of ingredient (the quantity is unknown(the quantity is unknown(the quantity is unknown(the quantity is unknown(the quantity is unknown(the quantity is unknown(the quantity is unknown(the quantity is unknown(the quantity is unknown ) : " + ingredient.getName());
           }
           return ingredient.getPrice() * ingredient.getRequiredQuantity();
         })
