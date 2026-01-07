@@ -39,7 +39,12 @@ public class Dish {
   // new method
   public double getDishCost () {
     return ingredients.stream()
-        .mapToDouble(Ingredient::getPrice)
+        .mapToDouble(ingredient -> {
+          if (ingredient.getRequiredQuantity() == null) {
+            throw new IllegalStateException("It is impossible to calculate the cost of ingredient : " + ingredient.getName());
+          }
+          return ingredient.getPrice() * ingredient.getRequiredQuantity();
+        })
         .sum();
   }
 }
