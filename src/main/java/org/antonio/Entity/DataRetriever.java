@@ -14,7 +14,7 @@ public class DataRetriever {
     String sqlQuery = """
       SELECT d.id AS dish_id, d.name AS dish_name, d.dish_type,
              i.id AS ingredient_id, i.name AS ingredient_name,
-             i.price, i.category
+             i.price, i.category, i.required_quantity
       FROM Dish d
       LEFT JOIN Ingredient i ON d.id = i.id_dish
       WHERE d.id = ?
@@ -41,7 +41,14 @@ public class DataRetriever {
           ingredient.setName(rs.getString("ingredient_name"));
           ingredient.setPrice(rs.getDouble("price"));
           ingredient.setCategory(CategoryEnum.valueOf(rs.getString("category")));
-          ingredient.setRequiredQuantity(rs.getDouble("required_category"));
+
+          double quantity = rs.getDouble("required_quantity");
+          if (rs.wasNull()) {
+            ingredient.setRequiredQuantity(null);
+          } else {
+            ingredient.setRequiredQuantity(quantity);
+          }
+
           ingredients.add(ingredient);
         }
       }
