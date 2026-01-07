@@ -30,7 +30,6 @@ public class DishTest {
 
   @Test
   public void saveDish_shouldCreateSoupeDeLegumesWithOignon() throws SQLException {
-    // GIVEN
     Ingredient oignon = new Ingredient();
     oignon.setId(6);
     oignon.setName("Oignon");

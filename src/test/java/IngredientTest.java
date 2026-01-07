@@ -1,6 +1,8 @@
 import org.antonio.Entity.CategoryEnum;
 import org.antonio.Entity.DataRetriever;
+import org.antonio.Entity.Dish;
 import org.antonio.Entity.Ingredient;
+import org.checkerframework.checker.units.qual.A;
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 
@@ -60,5 +62,12 @@ public class IngredientTest {
     );
 
     dataRetriever.createIngredients(newIngredients);
+  }
+
+  @Test
+  public void testFindDishesByIngredientName() throws SQLException {
+    List<Dish> result = dataRetriever.findDishesByIngredientName("eur");
+    Assertions.assertEquals(1, result.size());
+    Assertions.assertEquals("Gâteau au chocolat", result.get(0).getName());
   }
 }
