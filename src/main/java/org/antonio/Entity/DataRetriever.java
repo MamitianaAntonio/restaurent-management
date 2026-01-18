@@ -19,12 +19,6 @@ public class DataRetriever {
       WHERE d.id = ?
     """;
 
-    String sql = """
-        SELECT d.id AS dish_id, d.name AS dish_name, dish_type, dish.price AS dish_price
-          FROM dish
-          where dish.id = ?;
-        """;
-
     try (Connection connection = DBConnection.getConnection();
          PreparedStatement statement = connection.prepareStatement(sqlQuery)) {
       statement.setInt(1, id);
@@ -56,6 +50,7 @@ public class DataRetriever {
 
           ingredients.add(ingredient);
         }
+        connection.close();
       }
     }
 
