@@ -125,72 +125,81 @@ public class DataRetriever {
 
   // methods to save dish or update if it already exists
   public Dish saveDish (Dish dishToSave) throws SQLException {
-    String insertDishSql = """
-        INSERT INTO dish (name, dish_type)
-        VALUES (?, ?)
-        RETURNING id
-    """;
-
-    String updateDishSql = """
-        UPDATE dish
-        SET name = ?, dish_type = ?
-        WHERE id = ?
-    """;
-
-    String existsLinkSql = """
-        SELECT 1 FROM ingredient
-        WHERE id = ? AND id_dish = ?
-    """;
-
-    String linkIngredientSql = """
-        UPDATE ingredient
-        SET id_dish = ?
-        WHERE id = ?
+    String upsertDishSql = """
+      SELECT INTO Dish (id, name, dish_type)
+      VALUES (?, ?, ?::dish_type)
+      ON CONFLICT (id) DO UPDATE
+      SET name = EXCLUDED.name
+        dish_type = EXCLUDED.dish_type
+      RETURNING id
     """;
 
     try (Connection connection = DBConnection.getConnection()) {
       connection.setAutoCommit(false);
+      Integer dishId;
 
-      if (dishToSave.getId() == null) {
-        try (PreparedStatement statement = connection.prepareStatement(insertDishSql)) {
-          statement.setString(1, dishToSave.getName());
-          statement.setObject(2, dishToSave.getDishType(), Types.OTHER);
-
-          ResultSet rs = statement.executeQuery();
-          if (rs.next()) {
-            dishToSave.setId(rs.getInt("id"));
-          }
-        }
-      } else {
-        try (PreparedStatement statement = connection.prepareStatement(updateDishSql)) {
-          statement.setString(1, dishToSave.getName());
-          statement.setObject(2, dishToSave.getDishType(), Types.OTHER);
-          statement.setInt(3, dishToSave.getId());
-          statement.executeUpdate();
+      try (PreparedStatement statement = connection.prepareStatement(upsertDishSql)) {
+        if (dishToSave.getId() != null) {
+          statement.setInt(1, dishToSave.getId());
+        } else {
+          statement.setInt(1, );
         }
       }
+    }
+    return
+  }
 
-      for (Ingredient ingredient : dishToSave.getIngredients()) {
-        boolean alreadyLinked;
+  // method to get serial sequence name
+  private String getSerialSequenceName(Connection conn, String tableName, String columnName)
+      throws SQLException {
 
-        try (PreparedStatement checkStatement = connection.prepareStatement(existsLinkSql)) {
-          checkStatement.setInt(1, ingredient.getId());
-          checkStatement.setInt(2, dishToSave.getId());
+    String sql = "SELECT pg_get_serial_sequence(?, ?)";
 
-          ResultSet rs = checkStatement.executeQuery();
-          alreadyLinked = rs.next();
-        }
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setString(1, tableName);
+      ps.setString(2, columnName);
 
-        if (!alreadyLinked) {
-          try (PreparedStatement linkStatement = connection.prepareStatement(linkIngredientSql)) {
-            linkStatement.setInt(1, dishToSave.getId());
-            linkStatement.setInt(2, ingredient.getId());
-            linkStatement.executeUpdate();
-          }
+      try (ResultSet rs = ps.executeQuery()) {
+        if (rs.next()) {
+          return rs.getString(1);
         }
       }
-      connection.commit();
-      return dishToSave;
+    }
+    return null;
+  }
+
+  // nethod to get next serial value on db
+  private int getNextSerialValue(Connection conn, String tableName, String columnName)
+      throws SQLException {
+
+    String sequenceName = getSerialSequenceName(conn, tableName, columnName);
+    if (sequenceName == null) {
+      throw new IllegalArgumentException(
+          "Any sequence found for " + tableName + "." + columnName
+      );
+    }
+    updateSequenceNextValue(conn, tableName, columnName, sequenceName);
+
+    String nextValSql = "SELECT nextval(?)";
+
+    try (PreparedStatement ps = conn.prepareStatement(nextValSql)) {
+      ps.setString(1, sequenceName);
+      try (ResultSet rs = ps.executeQuery()) {
+        rs.next();
+        return rs.getInt(1);
+      }
+    }
+  }
+
+  // methods to update the sequence value on db
+  private void updateSequenceNextValue(Connection conn, String tableName, String columnName, String sequenceName) throws SQLException {
+    String setValSql = String.format(
+        "SELECT setval('%s', (SELECT COALESCE(MAX(%s), 0) FROM %s))",
+        sequenceName, columnName, tableName
+    );
+
+    try (PreparedStatement ps = conn.prepareStatement(setValSql)) {
+      ps.executeQuery();
     }
   }
 
