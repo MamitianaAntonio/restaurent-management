@@ -125,73 +125,47 @@ public class DataRetriever {
 
   // methods to save dish or update if it already exists
   public Dish saveDish (Dish dishToSave) throws SQLException {
-    String insertDishSql = """
-        INSERT INTO dish (name, dish_type)
-        VALUES (?, ?)
-        RETURNING id
-    """;
-
-    String updateDishSql = """
-        UPDATE dish
-        SET name = ?, dish_type = ?
-        WHERE id = ?
-    """;
-
-    String existsLinkSql = """
-        SELECT 1 FROM ingredient
-        WHERE id = ? AND id_dish = ?
-    """;
-
-    String linkIngredientSql = """
-        UPDATE ingredient
-        SET id_dish = ?
-        WHERE id = ?
+    String upsertDishSql = """
+      SELECT INTO Dish (id, name, dish_type)
+      VALUES (?, ?, ?::dish_type)
+      ON CONFLICT (id) DO UPDATE
+      SET name = EXCLUDED.name
+        dish_type = EXCLUDED.dish_type
+      RETURNING id
     """;
 
     try (Connection connection = DBConnection.getConnection()) {
       connection.setAutoCommit(false);
+      Integer dishId;
 
-      if (dishToSave.getId() == null) {
-        try (PreparedStatement statement = connection.prepareStatement(insertDishSql)) {
-          statement.setString(1, dishToSave.getName());
-          statement.setObject(2, dishToSave.getDishType(), Types.OTHER);
-
-          ResultSet rs = statement.executeQuery();
-          if (rs.next()) {
-            dishToSave.setId(rs.getInt("id"));
-          }
-        }
-      } else {
-        try (PreparedStatement statement = connection.prepareStatement(updateDishSql)) {
-          statement.setString(1, dishToSave.getName());
-          statement.setObject(2, dishToSave.getDishType(), Types.OTHER);
-          statement.setInt(3, dishToSave.getId());
-          statement.executeUpdate();
+      try (PreparedStatement statement = connection.prepareStatement(upsertDishSql)) {
+        if (dishToSave.getId() != null) {
+          statement.setInt(1, dishToSave.getId());
+        } else {
+          statement.setInt(1, );
         }
       }
-
-      for (Ingredient ingredient : dishToSave.getIngredients()) {
-        boolean alreadyLinked;
-
-        try (PreparedStatement checkStatement = connection.prepareStatement(existsLinkSql)) {
-          checkStatement.setInt(1, ingredient.getId());
-          checkStatement.setInt(2, dishToSave.getId());
-
-          ResultSet rs = checkStatement.executeQuery();
-          alreadyLinked = rs.next();
-        }
-
-        if (!alreadyLinked) {
-          try (PreparedStatement linkStatement = connection.prepareStatement(linkIngredientSql)) {
-            linkStatement.setInt(1, dishToSave.getId());
-            linkStatement.setInt(2, ingredient.getId());
-            linkStatement.executeUpdate();
-          }
-        }
-      }
-      connection.commit();
-      return dishToSave;
     }
+    return
+  }
+
+  // method to get serial sequence name
+  private String getSerialSequenceName(Connection conn, String tableName, String columnName)
+      throws SQLException {
+
+    String sql = "SELECT pg_get_serial_sequence(?, ?)";
+
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setString(1, tableName);
+      ps.setString(2, columnName);
+
+      try (ResultSet rs = ps.executeQuery()) {
+        if (rs.next()) {
+          return rs.getString(1);
+        }
+      }
+    }
+    return null;
   }
 
   public List<Dish> findDishesByIngredientName(String ingredientName) throws SQLException {
