@@ -168,6 +168,41 @@ public class DataRetriever {
     return null;
   }
 
+  // nethod to get next serial value on db
+  private int getNextSerialValue(Connection conn, String tableName, String columnName)
+      throws SQLException {
+
+    String sequenceName = getSerialSequenceName(conn, tableName, columnName);
+    if (sequenceName == null) {
+      throw new IllegalArgumentException(
+          "Any sequence found for " + tableName + "." + columnName
+      );
+    }
+    updateSequenceNextValue(conn, tableName, columnName, sequenceName);
+
+    String nextValSql = "SELECT nextval(?)";
+
+    try (PreparedStatement ps = conn.prepareStatement(nextValSql)) {
+      ps.setString(1, sequenceName);
+      try (ResultSet rs = ps.executeQuery()) {
+        rs.next();
+        return rs.getInt(1);
+      }
+    }
+  }
+
+  // methods to update the sequence value on db
+  private void updateSequenceNextValue(Connection conn, String tableName, String columnName, String sequenceName) throws SQLException {
+    String setValSql = String.format(
+        "SELECT setval('%s', (SELECT COALESCE(MAX(%s), 0) FROM %s))",
+        sequenceName, columnName, tableName
+    );
+
+    try (PreparedStatement ps = conn.prepareStatement(setValSql)) {
+      ps.executeQuery();
+    }
+  }
+
   public List<Dish> findDishesByIngredientName(String ingredientName) throws SQLException {
     List<Dish> dishes = new ArrayList<>();
     String sql = """
