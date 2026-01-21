@@ -1,20 +1,19 @@
 package org.antonio.Entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 public class Ingredient {
-  private int id;
+  private Integer id;
   private String name;
   private Double price;
   private CategoryEnum category;
   private Dish dish;
+  private UnitEnum unit;
   private Double requiredQuantity;
 
   // constructor for the test
