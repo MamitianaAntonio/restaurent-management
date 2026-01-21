@@ -1,9 +1,6 @@
 package org.antonio.Entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,9 +8,11 @@ import java.util.List;
 @Getter
 @Setter
 @AllArgsConstructor
+@ToString
 public class Dish {
   private Integer id;
   private String name;
+  private Double price;
   private DishTypeEnum dishType;
   private List<Ingredient> ingredients;
 
@@ -44,7 +43,8 @@ public class Dish {
     return ingredients.stream()
         .mapToDouble(ingredient -> {
           if (ingredient.getRequiredQuantity() == null) {
-            throw new IllegalStateException("It is impossible to calculate the cost of ingredient (the quantity is unknown(the quantity is unknown(the quantity is unknown(the quantity is unknown(the quantity is unknown(the quantity is unknown(the quantity is unknown(the quantity is unknown(the quantity is unknown ) : " + ingredient.getName());
+            throw new IllegalStateException("It is impossible to calculate the cost of ingredient (the quantity is unknown ) : "
+                + ingredient.getName());
           }
           return ingredient.getPrice() * ingredient.getRequiredQuantity();
         })
