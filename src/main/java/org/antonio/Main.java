@@ -15,7 +15,7 @@ public class Main {
 
     try {
       Dish salade = dataRetriever.findDishById(1);
-      System.out.println("Name of the dish : " + salade.getName());
+      System.out.println(salade);
 
       try {
         double costSalade = salade.getDishCost();
