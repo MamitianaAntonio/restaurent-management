@@ -18,3 +18,26 @@ CREATE TABLE DishIngredient (
 
 -- add dish price in table Dish
 ALTER TABLE Dish ADD COLUMN price numeric(10,2) DEFAULT 0;
+GRANT ALL PRIVILEGES ON TABLE dishingredient TO mini_dish_db_manager ;
+
+-- new insert in DishIngredient table
+INSERT INTO DishIngredient (id_dish, id_ingredient, quantity_required, unit)
+VALUES
+    (1, 1, 0.20, 'KG'),
+    (1, 2, 0.15, 'KG'),
+    (2, 3, 1.00, 'KG'),
+    (2, 4, 0.30, 'L'),
+    (4, 5, 0.20, 'KG');
+
+-- update dish price
+UPDATE dish
+    SET price = 3500.00
+    WHERE id = 1;
+
+UPDATE dish
+    SET price = 12000.00
+    WHERE id = 2;
+
+UPDATE dish
+    SET price = 8000.00
+    WHERE id = 4;
