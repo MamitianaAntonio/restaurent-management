@@ -7,7 +7,7 @@ INSERT INTO Dish (name, dish_type) VALUES
     ('Salade de fruits', 'DESSERT');
 
 -- Insert ingredient
-INSERT INTO Ingredient (id, name, price, category, id_dish) VALUES
+INSERT INTO Ingredient (name, price, category, id_dish) VALUES
     ('Laitue', 800.00, 'VEGETABLE', 1),
     ('Tomate', 600.00, 'VEGETABLE', 1),
     ('Poulet', 4500.00, 'ANIMAL', 2),

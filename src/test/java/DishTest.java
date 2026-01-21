@@ -56,6 +56,7 @@ public class DishTest {
   @Test
   public void saveDish_shouldRemoveIngredientsAndKeepOnlyFromage() throws SQLException {
     Ingredient fromage = new Ingredient();
+    fromage.setId(7);
     fromage.setName("Fromage");
 
     Dish dish = new Dish();
