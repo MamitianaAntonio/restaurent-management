@@ -6,19 +6,21 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DataRetriever {
-  // method to find dish by id
+  // new findDishById
   public Dish findDishById(Integer id) throws SQLException {
     Dish dish = null;
     List<Ingredient> ingredients = new ArrayList<>();
 
     String sqlQuery = """
-      SELECT d.id AS dish_id, d.name AS dish_name, d.dish_type,
-             i.id AS ingredient_id, i.name AS ingredient_name,
-             i.price, i.category, i.required_quantity
-      FROM Dish d
-      LEFT JOIN Ingredient i ON d.id = i.id_dish
-      WHERE d.id = ?
-    """;
+    SELECT d.id AS dish_id, d.name AS dish_name, d.dish_type, d.price,
+           i.id AS ingredient_id, i.name AS ingredient_name,
+           i.price, i.category,
+           di.quantity_required, di.unit
+    FROM Dish d
+    LEFT JOIN DishIngredient di ON d.id = di.id_dish
+    LEFT JOIN Ingredient i ON di.id_ingredient = i.id
+    WHERE d.id = ?
+  """;
 
     try (Connection connection = DBConnection.getConnection();
          PreparedStatement statement = connection.prepareStatement(sqlQuery)) {
@@ -31,10 +33,10 @@ public class DataRetriever {
           dish.setId(rs.getInt("dish_id"));
           dish.setName(rs.getString("dish_name"));
           dish.setDishType(DishTypeEnum.valueOf(rs.getString("dish_type")));
+          dish.setPrice(rs.getDouble("price"));
           dish.setIngredients(ingredients);
         }
 
-        // add to ingredients if there is ingredient
         if (rs.getInt("ingredient_id") != 0) {
           Ingredient ingredient = new Ingredient();
           ingredient.setId(rs.getInt("ingredient_id"));
@@ -42,11 +44,10 @@ public class DataRetriever {
           ingredient.setPrice(rs.getDouble("price"));
           ingredient.setCategory(CategoryEnum.valueOf(rs.getString("category")));
 
-          double quantity = rs.getDouble("required_quantity");
-          if (rs.wasNull()) {
-            ingredient.setRequiredQuantity(null);
-          } else {
+          double quantity = rs.getDouble("quantity_required");
+          if (!rs.wasNull()) {
             ingredient.setRequiredQuantity(quantity);
+            ingredient.setUnit(UnitEnum.valueOf(rs.getString("unit")));
           }
 
           ingredients.add(ingredient);
@@ -127,11 +128,12 @@ public class DataRetriever {
   // methods to save dish or update if it already exists
   public Dish saveDish (Dish dishToSave) throws SQLException {
     String upsertDishSql = """
-      SELECT INTO Dish (id, name, dish_type)
-      VALUES (?, ?, ?::dish_type)
+      INSERT INTO Dish (id, name, dish_type, price)
+      VALUES (?, ?, ?::dish_type_enum, ?)
       ON CONFLICT (id) DO UPDATE
-      SET name = EXCLUDED.name
+      SET name = EXCLUDED.name,
         dish_type = EXCLUDED.dish_type
+        price = EXCLUDED.price
       RETURNING id
     """;
 
@@ -147,12 +149,19 @@ public class DataRetriever {
         }
         statement.setString(2, dishToSave.getName());
         statement.setString(3, dishToSave.getDishType().name());
+        statement.setDouble(4, dishToSave.getPrice());
 
         try (ResultSet rs = statement.executeQuery()) {
           rs.next();
           dishId = rs.getInt(1);
         }
       }
+      List<Ingredient> newIngredients = dishToSave.getIngredients();
+      detachIngredients(connection, dishId, newIngredients);
+      attachIngredients(connection, dishId, newIngredients);
+
+      connection.commit();
+      return findDishById(dishId);
     }
   }
 
@@ -193,22 +202,24 @@ public class DataRetriever {
   // method to attach ingredient on a dish
   private void attachIngredients(Connection conn, Integer dishId, List<Ingredient> ingredients)
       throws SQLException {
-
     if (ingredients == null || ingredients.isEmpty()) {
       return;
     }
 
     String attachSql = """
-                    UPDATE ingredient
-                    SET id_dish = ?
-                    WHERE id = ?
-                """;
+        UPDATE ingredient
+        SET id_dish = ?
+        WHERE id = ?
+    """;
 
     try (PreparedStatement ps = conn.prepareStatement(attachSql)) {
       for (Ingredient ingredient : ingredients) {
+        if (ingredient.getId() == null) {
+          throw new SQLException("Ingredient must have an id to be attached");
+        }
         ps.setInt(1, dishId);
         ps.setInt(2, ingredient.getId());
-        ps.addBatch(); // Can be substitute ps.executeUpdate() but bad performance
+        ps.addBatch();
       }
       ps.executeBatch();
     }
