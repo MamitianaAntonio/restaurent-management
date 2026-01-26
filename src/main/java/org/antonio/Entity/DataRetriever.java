@@ -132,12 +132,14 @@ public class DataRetriever {
       VALUES (?, ?, ?::dish_type_enum, ?)
       ON CONFLICT (id) DO UPDATE
       SET name = EXCLUDED.name,
-        dish_type = EXCLUDED.dish_type
+        dish_type = EXCLUDED.dish_type,
         price = EXCLUDED.price
-      RETURNING id
+      RETURNING id, name, dish_type, price
     """;
 
-    try (Connection connection = DBConnection.getConnection()) {
+    Connection connection = null;
+    try {
+      connection = DBConnection.getConnection();
       connection.setAutoCommit(false);
       Integer dishId;
 
@@ -149,19 +151,37 @@ public class DataRetriever {
         }
         statement.setString(2, dishToSave.getName());
         statement.setString(3, dishToSave.getDishType().name());
-        statement.setDouble(4, dishToSave.getPrice());
+
+        if(dishToSave.getPrice() != null) {
+          statement.setDouble(4, dishToSave.getPrice());
+        } else {
+          statement.setNull(4, Types.DOUBLE);
+        }
 
         try (ResultSet rs = statement.executeQuery()) {
           rs.next();
           dishId = rs.getInt(1);
         }
       }
+
       List<Ingredient> newIngredients = dishToSave.getIngredients();
-      detachIngredients(connection, dishId, newIngredients);
-      attachIngredients(connection, dishId, newIngredients);
+      if (newIngredients != null) {
+        detachIngredients(connection, dishId, newIngredients);
+        attachIngredients(connection, dishId, newIngredients);
+      }
 
       connection.commit();
       return findDishById(dishId);
+
+    } catch (SQLException e) {
+      if (connection != null) {
+        connection.rollback();
+      }
+      throw new RuntimeException(e);
+    } finally {
+      if (connection != null) {
+        connection.close();
+      }
     }
   }
 
