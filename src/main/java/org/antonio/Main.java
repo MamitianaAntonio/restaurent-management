@@ -33,7 +33,7 @@ public class Main {
       Ingredient laitue = new Ingredient();
       laitue.setId(1);
       Ingredient tomate = new Ingredient();
-      tomate.setId(2);
+      tomate.setId(1);
       ingredients.add(laitue);
       ingredients.add(tomate);
 
