@@ -31,7 +31,7 @@ public class DishTest {
   @Test
   public void saveDish_shouldCreateSoupeDeLegumesWithOignon() throws SQLException {
     Ingredient oignon = new Ingredient();
-    oignon.setId(6);
+    oignon.setId(9);
     oignon.setName("Oignon");
 
     Dish dish = new Dish();
@@ -56,11 +56,10 @@ public class DishTest {
   @Test
   public void saveDish_shouldRemoveIngredientsAndKeepOnlyFromage() throws SQLException {
     Ingredient fromage = new Ingredient();
-    fromage.setId(7);
+    fromage.setId(8);
     fromage.setName("Fromage");
 
     Dish dish = new Dish();
-    dish.setId(1);
     dish.setName("Salade de fromage");
     dish.setDishType(DishTypeEnum.START);
     dish.setIngredients(List.of(fromage));
