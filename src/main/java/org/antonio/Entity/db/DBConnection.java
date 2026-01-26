@@ -1,4 +1,4 @@
-package org.antonio.Entity;
+package org.antonio.Entity.db;
 
 import io.github.cdimascio.dotenv.Dotenv;
 

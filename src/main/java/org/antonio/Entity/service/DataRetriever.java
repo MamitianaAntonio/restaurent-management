@@ -1,4 +1,7 @@
-package org.antonio.Entity;
+package org.antonio.Entity.service;
+
+import org.antonio.Entity.db.DBConnection;
+import org.antonio.Entity.model.*;
 
 import java.sql.*;
 import java.util.ArrayList;
