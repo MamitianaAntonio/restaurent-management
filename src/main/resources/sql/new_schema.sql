@@ -41,3 +41,16 @@ UPDATE dish
 UPDATE dish
     SET price = 8000.00
     WHERE id = 4;
+
+-- Stock movement
+CREATE TYPE movement_type AS ENUM ('IN', 'OUT');
+
+CREATE TABLE StockMovement (
+    id INT PRIMARY KEY NOT NULL,
+    id_ingredient INT NOT NULL,
+    quantity NUMERIC(10, 2) NOT NULL,
+    unit unit_type NOT NULL,
+    type movement_type NOT NULL,
+    creation_datetime TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_ingredient FOREIGN KEY (id_ingredient) REFERENCES ingredient (id) ON DELETE CASCADE
+);
