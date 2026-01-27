@@ -319,30 +319,30 @@ public class DataRetriever {
       int page,
       int size
   ) throws SQLException {
-
     List<Ingredient> ingredients = new ArrayList<>();
-    StringBuilder sql = new StringBuilder(
-        "SELECT i.id, i.name, i.price, i.category, i.id_dish, " +
-            "d.name AS dish_name, d.dish_type " +
-            "FROM ingredient i " +
-            "LEFT JOIN dish d ON i.id_dish = d.id " +
-            "WHERE 1=1"
-    );
+    StringBuilder sqlQuery = new StringBuilder("""
+      SELECT DISTINCT i.id, i.name, i.price, i.category,
+             d.id AS dish_id, d.name AS dish_name, d.dish_type
+      FROM Ingredient i
+      LEFT JOIN DishIngredient di ON i.id = di.id_ingredient
+      LEFT JOIN Dish d ON di.id_dish = d.id
+      WHERE 1=1
+  """);
 
     if (ingredientName != null && !ingredientName.isEmpty()) {
-      sql.append(" AND i.name ILIKE ?");
+      sqlQuery.append(" AND i.name ILIKE ?");
     }
     if (category != null) {
-      sql.append(" AND i.category = ?");
+      sqlQuery.append(" AND i.category = ?::category_enum");
     }
     if (dishName != null && !dishName.isEmpty()) {
-      sql.append(" AND d.name ILIKE ?");
+      sqlQuery.append(" AND d.name ILIKE ?");
     }
 
-    sql.append(" ORDER BY i.id ASC LIMIT ? OFFSET ?");
+    sqlQuery.append(" ORDER BY i.id ASC LIMIT ? OFFSET ?");
 
     try (Connection connection = DBConnection.getConnection();
-         PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+         PreparedStatement statement = connection.prepareStatement(sqlQuery.toString())) {
       int index = 1;
       if (ingredientName != null && !ingredientName.isEmpty()) {
         statement.setString(index++, "%" + ingredientName + "%");
@@ -365,7 +365,7 @@ public class DataRetriever {
         ingredient.setPrice(rs.getDouble("price"));
         ingredient.setCategory(CategoryEnum.valueOf(rs.getString("category")));
 
-        int idDish = rs.getInt("id_dish");
+        int idDish = rs.getInt("dish_id");
         if (!rs.wasNull()) {
           Dish dish = new Dish();
           dish.setId(idDish);

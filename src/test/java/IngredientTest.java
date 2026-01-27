@@ -70,27 +70,23 @@ public class IngredientTest {
     Assertions.assertEquals("Gâteau au chocolat", result.get(0).getName());
   }
 
-  // Test f) Filtre par catégorie VEGETABLE
   @Test
-  public void findIngredientsByCriteria_shouldReturnLaitueAndTomate() throws Exception {
-    // GIVEN
+  public void findIngredientsByCriteria_shouldReturnLaitueAndTomateAndOignon() throws Exception {
     String ingredientName = null;
     CategoryEnum category = CategoryEnum.VEGETABLE;
     String dishName = null;
     int page = 1;
     int size = 10;
 
-    // WHEN
     List<Ingredient> result = dataRetriever.findIngredientsByCriteria(ingredientName, category, dishName, page, size);
 
-    // THEN
     Assertions.assertNotNull(result);
-    Assertions.assertEquals(2, result.size());
+    Assertions.assertEquals(3, result.size());
     Assertions.assertTrue(result.stream().anyMatch(i -> i.getName().equals("Laitue")));
     Assertions.assertTrue(result.stream().anyMatch(i -> i.getName().equals("Tomate")));
+    Assertions.assertTrue(result.stream().anyMatch(i -> i.getName().equals("Oignon")));
   }
 
-  // Test g) Pas de résultat attendu
   @Test
   public void findIngredientsByCriteria_shouldReturnEmptyList() throws Exception {
     String ingredientName = "cho";
@@ -106,6 +102,18 @@ public class IngredientTest {
   }
 
   @Test
+  public void debug_findChocolat() throws Exception {
+    List<Ingredient> chocolatOnly = dataRetriever.findIngredientsByCriteria("cho", null, null, 1, 10);
+    System.out.println("Only chocolate : " + chocolatOnly.stream().map(Ingredient::getName).toList());
+
+    List<Ingredient> gateauOnly = dataRetriever.findIngredientsByCriteria(null, null, "gâteau", 1, 10);
+    System.out.println("Ingredient on the cake : " + gateauOnly.stream().map(Ingredient::getName).toList());
+
+    List<Ingredient> both = dataRetriever.findIngredientsByCriteria("cho", null, "gâteau", 1, 10);
+    System.out.println("Chocolate in the cake : " + both.stream().map(Ingredient::getName).toList());
+  }
+
+  @Test
   public void findIngredientsByCriteria_shouldReturnChocolat() throws Exception {
     String ingredientName = "cho";
     CategoryEnum category = null;
@@ -117,6 +125,22 @@ public class IngredientTest {
 
     Assertions.assertNotNull(result);
     Assertions.assertEquals(1, result.size());
+  }
+
+  @Test
+  public void findIngredientsByCriteria_shouldReturnVegetables() throws Exception {
+    String ingredientName = null;
+    CategoryEnum category = CategoryEnum.VEGETABLE;
+    String dishName = null;
+    int page = 1;
+    int size = 10;
+
+    List<Ingredient> result = dataRetriever.findIngredientsByCriteria(ingredientName, category, dishName, page, size);
+
+    Assertions.assertNotNull(result);
+    System.out.println("Légumes trouvés: " + result.stream().map(Ingredient::getName).toList());
+    Assertions.assertTrue(result.stream().anyMatch(i -> i.getName().equals("Laitue")));
+    Assertions.assertTrue(result.stream().anyMatch(i -> i.getName().equals("Tomate")));
   }
 
   @Test
