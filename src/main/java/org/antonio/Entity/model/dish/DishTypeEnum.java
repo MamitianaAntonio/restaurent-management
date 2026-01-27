@@ -1,4 +1,4 @@
-package org.antonio.Entity.model;
+package org.antonio.Entity.model.dish;
 
 public enum DishTypeEnum {
   START,

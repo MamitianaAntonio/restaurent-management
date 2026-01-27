@@ -1,6 +1,7 @@
-package org.antonio.Entity.model;
+package org.antonio.Entity.model.dish;
 
 import lombok.*;
+import org.antonio.Entity.model.ingredient.Ingredient;
 
 import java.util.ArrayList;
 import java.util.List;
