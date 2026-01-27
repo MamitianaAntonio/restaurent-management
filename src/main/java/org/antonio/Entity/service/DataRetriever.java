@@ -6,7 +6,6 @@ import org.antonio.Entity.model.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class DataRetriever {
   // new findDishById
@@ -379,13 +378,15 @@ public class DataRetriever {
     return ingredients;
   }
 
-  private List<Ingredient> findIngredientByDishId(Integer idDish) throws SQLException{
+  public List<Ingredient> findIngredientByDishId(Integer idDish) throws SQLException{
     List<Ingredient> ingredients = new ArrayList<>();
 
-    String sqlQuery =  """
-        SELECT ingredient.id, ingredient.name, ingredient.price, ingredient.category, ingredient.required_quantity
-        from ingredient where id_dish = ?;
-    """;
+    String sqlQuery = """
+        SELECT i.id, i.name, i.price, i.category, di.quantity_required, di.unit
+        FROM ingredient i
+        INNER JOIN DishIngredient di ON i.id = di.id_ingredient
+        WHERE di.id_dish = ?
+     """;
 
     try (Connection connection = DBConnection.getConnection();
       PreparedStatement statement = connection.prepareStatement(sqlQuery)) {
@@ -398,11 +399,14 @@ public class DataRetriever {
         ingredient.setName(rs.getString("name"));
         ingredient.setPrice(rs.getDouble("price"));
         ingredient.setCategory(CategoryEnum.valueOf(rs.getString("category")));
-        Object requiredQuantity = rs.getObject("required_quantity");
-        ingredient.setRequiredQuantity(requiredQuantity == null ? null : rs.getDouble("required_quantity"));
+
+        double quantity = rs.getDouble("quantity_required");
+        if(!rs.wasNull()) {
+          ingredient.setRequiredQuantity(quantity);
+          ingredient.setUnit(UnitEnum.valueOf(rs.getString("unit")));
+        }
         ingredients.add(ingredient);
       }
-      connection.close();
     }
 
     return ingredients;
