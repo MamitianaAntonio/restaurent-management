@@ -1,4 +1,5 @@
 import org.antonio.Entity.model.CategoryEnum;
+import org.antonio.Entity.model.DishTypeEnum;
 import org.antonio.Entity.service.DataRetriever;
 import org.antonio.Entity.model.Dish;
 import org.antonio.Entity.model.Ingredient;
@@ -116,5 +117,29 @@ public class IngredientTest {
 
     Assertions.assertNotNull(result);
     Assertions.assertEquals(1, result.size());
+  }
+
+  @Test
+  public void findIngredientByDishId_shouldReturnIngredientsForExistingDish() throws SQLException {
+    Integer dishId = 1;
+    List<Ingredient> ingredients = dataRetriever.findIngredientByDishId(dishId);
+
+    Assertions.assertNotNull(ingredients);
+    Assertions.assertFalse(ingredients.isEmpty());
+    Assertions.assertTrue(ingredients.size() > 0);
+
+    Ingredient firstIngredient = ingredients.get(0);
+    Assertions.assertNotNull(firstIngredient.getId());
+    Assertions.assertNotNull(firstIngredient.getName());
+    Assertions.assertNotNull(firstIngredient.getPrice());
+    Assertions.assertNotNull(firstIngredient.getCategory());
+  }
+
+  @Test
+  public void findIngredientByDishId_shouldReturnEmptyListForNonExistentDish() throws SQLException {
+    Integer nonExistentDishId = 99999;
+    List<Ingredient> ingredients = dataRetriever.findIngredientByDishId(nonExistentDishId);
+    Assertions.assertNotNull(ingredients);
+    Assertions.assertTrue(ingredients.isEmpty());
   }
 }
