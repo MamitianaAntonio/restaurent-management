@@ -39,7 +39,7 @@ public class Dish {
     return total;
   }
 
-  // new method
+  // new get dish cost
   public double getDishCost () {
     return ingredients.stream()
         .mapToDouble(ingredient -> {
@@ -50,5 +50,14 @@ public class Dish {
           return ingredient.getPrice() * ingredient.getRequiredQuantity();
         })
         .sum();
+  }
+
+  // get cross margin method
+  public double getCrossMargin () {
+    if (this.price == null) {
+      throw new RuntimeException("Dish does not have price .");
+    }
+
+    return this.price - getDishCost();
   }
 }
