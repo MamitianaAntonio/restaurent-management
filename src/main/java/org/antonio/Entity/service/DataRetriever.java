@@ -1,7 +1,12 @@
 package org.antonio.Entity.service;
 
 import org.antonio.Entity.db.DBConnection;
-import org.antonio.Entity.model.*;
+import org.antonio.Entity.model.dish.Dish;
+import org.antonio.Entity.model.dish.DishTypeEnum;
+import org.antonio.Entity.model.ingredient.CategoryEnum;
+import org.antonio.Entity.model.ingredient.Ingredient;
+import org.antonio.Entity.model.ingredient.UnitEnum;
+import org.antonio.Entity.model.stock.StockMovement;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -413,5 +418,77 @@ public class DataRetriever {
     }
 
     return ingredients;
+  }
+
+  // method to save ingredient including stock movement
+  public Ingredient saveIngredient (Ingredient toSave) throws SQLException {
+    String ingredientSql = """
+      INSERT INTO ingredient (id, name, price, category) 
+            VALUES (?, ?, ?, ?::category_enum)
+            on conflict (id) do update
+                set name = excluded.name,
+                    price = excluded.price,
+                    category = excluded.category::category_enum
+            returning id, name, price, category; 
+    """;
+
+    String stockSql = """
+      INSERT INTO stock_movement (id, id_ingredient, quantity, unit, type, creation_datetime)
+          VALUES (?, ?, ?, ?::unit_type, ?::movement_type, ?)
+          ON CONFLICT (id) DO NOTHING;
+    """;
+
+    Connection connection = null;
+    try {
+       connection = DBConnection.getConnection();
+       PreparedStatement ingredientStatement = connection.prepareStatement(ingredientSql);
+       ingredientStatement.setInt(1, toSave.getId());
+       ingredientStatement.setString(2, toSave.getName());
+       ingredientStatement.setDouble(3, toSave.getPrice());
+       ingredientStatement.setString(4, toSave.getCategory().toString());
+
+       ResultSet ingredientResultSet = ingredientStatement.executeQuery();
+       Ingredient savedIngredient = null;
+       if (ingredientResultSet.next()) {
+         savedIngredient = mapToIngredient(ingredientResultSet);
+         savedIngredient.setStockMovementList(toSave.getStockMovementList());
+       }
+
+       PreparedStatement stockStatement = connection.prepareStatement(stockSql);
+       if (toSave.getStockMovementList() != null) {
+         for (StockMovement movement : toSave.getStockMovementList()) {
+           stockStatement.setInt(1, movement.getId());
+           stockStatement.setInt(2, savedIngredient.getId());
+           stockStatement.setDouble(3, movement.getValue().getQuantity());
+           stockStatement.setString(4, movement.getValue().getUnit().toString());
+           stockStatement.setString(5, movement.getType().toString());
+           stockStatement.setTimestamp(6, Timestamp.from(movement.getCreationDatetime()));
+           stockStatement.addBatch();
+         }
+         stockStatement.executeBatch();
+       }
+
+       connection.commit();
+       return savedIngredient;
+    } catch (SQLException e) {
+      if (connection != null) {
+        connection.rollback();
+      }
+      throw new RuntimeException(e);
+    } finally {
+      if (connection != null) {
+        connection.close();
+      }
+    }
+  }
+
+  private Ingredient mapToIngredient (ResultSet rs) throws SQLException {
+    Ingredient ingredient = new Ingredient();
+    ingredient.setId(rs.getInt("id"));
+    ingredient.setName(rs.getString("name"));
+    ingredient.setPrice(rs.getDouble("price"));
+    ingredient.setCategory(CategoryEnum.valueOf(rs.getString("category")));
+    ingredient.setStockMovementList(new ArrayList<>());
+    return ingredient;
   }
 }

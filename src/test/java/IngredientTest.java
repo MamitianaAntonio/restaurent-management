@@ -1,8 +1,7 @@
-import org.antonio.Entity.model.CategoryEnum;
-import org.antonio.Entity.model.DishTypeEnum;
+import org.antonio.Entity.model.ingredient.CategoryEnum;
 import org.antonio.Entity.service.DataRetriever;
-import org.antonio.Entity.model.Dish;
-import org.antonio.Entity.model.Ingredient;
+import org.antonio.Entity.model.dish.Dish;
+import org.antonio.Entity.model.ingredient.Ingredient;
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 

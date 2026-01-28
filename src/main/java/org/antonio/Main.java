@@ -1,9 +1,9 @@
 package org.antonio;
 
-import org.antonio.Entity.DataRetriever;
-import org.antonio.Entity.Dish;
-import org.antonio.Entity.DishTypeEnum;
-import org.antonio.Entity.Ingredient;
+import org.antonio.Entity.service.DataRetriever;
+import org.antonio.Entity.model.dish.Dish;
+import org.antonio.Entity.model.dish.DishTypeEnum;
+import org.antonio.Entity.model.ingredient.Ingredient;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -29,6 +29,7 @@ public class Main {
       Dish newSalade = new Dish();
       newSalade.setName("Special salade");
       newSalade.setDishType(DishTypeEnum.START);
+      newSalade.setPrice(500.0);
       List<Ingredient> ingredients = new ArrayList<>();
       Ingredient laitue = new Ingredient();
       laitue.setId(1);
@@ -36,9 +37,11 @@ public class Main {
       tomate.setId(1);
       ingredients.add(laitue);
       ingredients.add(tomate);
+      newSalade.setIngredients(ingredients);
 
       Dish savedDish = dataRetriever.saveDish(newSalade);
-      System.out.println("Saved dish : " + savedDish.getName() + " with ID " + savedDish.getId());
+      System.out.println(savedDish.getIngredients());
+      System.out.println("Saved dish : " + savedDish.getName() + " with ID " + savedDish.getId() + " and price : " + savedDish.getPrice());
 
     } catch (SQLException e) {
       throw new RuntimeException(e);
