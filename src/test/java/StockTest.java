@@ -5,7 +5,6 @@ import org.antonio.Entity.model.stock.MovementTypeEnum;
 import org.antonio.Entity.model.stock.StockMovement;
 import org.antonio.Entity.model.stock.StockValue;
 import org.antonio.Entity.service.DataRetriever;
-import org.checkerframework.checker.units.qual.A;
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 
