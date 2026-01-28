@@ -435,7 +435,7 @@ public class DataRetriever {
     """;
 
     String stockSql = """
-      INSERT INTO stock_movement (id, id_ingredient, quantity, unit, type, creation_datetime)
+      INSERT INTO StockMovement (id, id_ingredient, quantity, unit, type, creation_datetime)
           VALUES (?, ?, ?, ?::unit_type, ?::movement_type, ?)
           ON CONFLICT (id) DO NOTHING;
     """;
@@ -470,6 +470,7 @@ public class DataRetriever {
          stockStatement.executeBatch();
        }
 
+       connection.setAutoCommit(false);
        connection.commit();
        return savedIngredient;
     } catch (SQLException e) {
