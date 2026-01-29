@@ -865,4 +865,66 @@ public class DataRetriever {
       throw new RuntimeException(e);
     }
   }
+
+  public Sale createSaleFrom(Order order) {
+    if (order.getPaymentStatus() != PaymentStatus.PAID) {
+      throw new RuntimeException("Cannot create sale - order " +
+          order.getReference() + " is not paid.");
+    }
+
+    if (orderHasExistingSale(order.getId())) {
+      throw new RuntimeException("Cannot create sale - order " +
+          order.getReference() + " already has a sale.");
+    }
+
+    Sale sale = new Sale();
+    sale.setOrder(order);
+    sale.setSaleDateTime(Instant.now());
+
+    return saveSale(sale);
+  }
+
+  private boolean orderHasExistingSale(Integer orderId) {
+    String sql = "SELECT COUNT(*) FROM sale WHERE id_order = ?";
+
+    try (Connection connection = DBConnection.getConnection()) {
+      PreparedStatement ps = connection.prepareStatement(sql);
+      ps.setInt(1, orderId);
+      ResultSet rs = ps.executeQuery();
+
+      if (rs.next()) {
+        return rs.getInt(1) > 0;
+      }
+      return false;
+
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private Sale saveSale(Sale sale) {
+    String sql = """
+            INSERT INTO sale (sale_datetime, id_order) 
+            VALUES (?, ?)
+            RETURNING id, sale_datetime
+        """;
+
+    try (Connection connection = DBConnection.getConnection()) {
+      PreparedStatement ps = connection.prepareStatement(sql);
+      ps.setTimestamp(1, Timestamp.from(sale.getSaleDateTime()));
+      ps.setInt(2, sale.getOrder().getId());
+
+      ResultSet rs = ps.executeQuery();
+      if (rs.next()) {
+        sale.setId(rs.getInt("id"));
+        sale.setSaleDateTime(rs.getTimestamp("sale_datetime").toInstant());
+        return sale;
+      }
+
+      throw new RuntimeException("Failed to save sale");
+
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
 }
