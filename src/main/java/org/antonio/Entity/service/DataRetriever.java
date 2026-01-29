@@ -6,6 +6,8 @@ import org.antonio.Entity.model.dish.DishTypeEnum;
 import org.antonio.Entity.model.ingredient.CategoryEnum;
 import org.antonio.Entity.model.ingredient.Ingredient;
 import org.antonio.Entity.model.ingredient.UnitEnum;
+import org.antonio.Entity.model.order.DishOrder;
+import org.antonio.Entity.model.order.Order;
 import org.antonio.Entity.model.stock.MovementTypeEnum;
 import org.antonio.Entity.model.stock.StockMovement;
 import org.antonio.Entity.model.stock.StockValue;
@@ -547,6 +549,54 @@ public class DataRetriever {
         ingredient.setStockMovementList(movements);
       }
       return ingredient;
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private Order mapToOrder (ResultSet rs) throws SQLException {
+   Order order = new Order();
+   order.setId(rs.getInt("id"));
+   order.setReference(rs.getString("reference"));
+   order.setCreationDatetime(rs.getTimestamp("creation_datetime").toInstant());
+   return order;
+  }
+
+  private DishOrder mapTodishOrder (ResultSet rs) throws SQLException{
+    DishOrder dishOrder = new DishOrder();
+    dishOrder.setId(rs.getInt("id"));
+    dishOrder.setDish(findDishById(rs.getInt("id_dish")));
+    dishOrder.setQuantity(rs.getInt("quantity"));
+    return dishOrder;
+  }
+
+  // find stock movements by ingredient id
+  public List<StockMovement> findStockMovementsByIngredientId(Integer id) throws SQLException {
+    Connection connection = DBConnection.getConnection();
+    List<StockMovement> stockMovementList = new ArrayList<>();
+    try {
+      PreparedStatement preparedStatement = connection.prepareStatement("""
+        SELECT id, quantity, unit, type, creation_datetime
+        FROM StockMovement
+        WHERE StockMovement.id_ingredient = ?;
+      """);
+      preparedStatement.setInt(1, id);
+      ResultSet resultSet = preparedStatement.executeQuery();
+      while (resultSet.next()) {
+        StockMovement stockMovement = new StockMovement();
+        stockMovement.setId(resultSet.getInt("id"));
+        stockMovement.setType(MovementTypeEnum.valueOf(resultSet.getString("type")));
+        stockMovement.setCreationDatetime(resultSet.getTimestamp("creation_datetime").toInstant());
+
+        StockValue stockValue = new StockValue();
+        stockValue.setQuantity(resultSet.getDouble("quantity"));
+        stockValue.setUnit(UnitEnum.valueOf(resultSet.getString("unit")));
+        stockMovement.setValue(stockValue);
+
+        stockMovementList.add(stockMovement);
+      }
+      DBConnection.closeConnection(connection);
+      return stockMovementList;
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }

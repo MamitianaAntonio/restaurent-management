@@ -4,6 +4,7 @@ import lombok.*;
 import org.antonio.Entity.model.dish.Dish;
 
 @Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
