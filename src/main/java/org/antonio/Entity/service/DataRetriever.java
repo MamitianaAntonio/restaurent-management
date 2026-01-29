@@ -13,6 +13,7 @@ import org.antonio.Entity.model.stock.StockMovement;
 import org.antonio.Entity.model.stock.StockValue;
 
 import java.sql.*;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -425,7 +426,7 @@ public class DataRetriever {
   }
 
   // method to save ingredient including stock movement
-  public Ingredient saveIngredient (Ingredient toSave) throws SQLException {
+  public void saveIngredient (Ingredient toSave) throws SQLException {
     String ingredientSql = """
       INSERT INTO ingredient (id, name, price, category) 
             VALUES (?, ?, ?, ?::category_enum)
@@ -474,7 +475,6 @@ public class DataRetriever {
 
        connection.setAutoCommit(false);
        connection.commit();
-       return savedIngredient;
     } catch (SQLException e) {
       if (connection != null) {
         connection.rollback();
@@ -551,6 +551,46 @@ public class DataRetriever {
       return ingredient;
     } catch (SQLException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  // check store availability
+  private void checkStoreAvailability (Order order) throws SQLException {
+    for (DishOrder dishOrder : order.getDishOrders()) {
+      Dish dish = findDishById(dishOrder.getDish().getId());
+      for (Ingredient ingredient : dish.getIngredients()) {
+        Ingredient fullIngredient = findIngredientByIdWithStockMovements(ingredient.getId());
+        double requiredQuantity = ingredient.getRequiredQuantity() * dishOrder.getQuantity();
+
+        StockValue currentStock = fullIngredient.getStockValueAt(Instant.now());
+        if (currentStock.getQuantity() < requiredQuantity) {
+          throw new SQLException("Insufficient stock for ingredient : " + fullIngredient.getName());
+        }
+      }
+    }
+  }
+
+  // create movement in out stock for a dish
+  private void createStockMovementsForDish(Connection connection, DishOrder dishOrder) throws SQLException {
+    Dish dish = findDishById(dishOrder.getDish().getId());
+
+    for (Ingredient ingredient : dish.getIngredients()) {
+      double quantityUsed = ingredient.getRequiredQuantity() * dishOrder.getQuantity();
+
+      String stockMovementSql = """
+      INSERT INTO StockMovement (id, id_ingredient, quantity, unit, type, creation_datetime)
+      VALUES (?, ?, ?, ?::unit_type, ?::movement_type, ?)
+    """;
+
+      try (PreparedStatement ps = connection.prepareStatement(stockMovementSql)) {
+        ps.setInt(1, getNextSerialValue(connection, "StockMovement", "id"));
+        ps.setInt(2, ingredient.getId());
+        ps.setDouble(3, quantityUsed);
+        ps.setString(4, ingredient.getUnit().name());
+        ps.setString(5, MovementTypeEnum.OUT.name());
+        ps.setTimestamp(6, Timestamp.from(Instant.now()));
+        ps.executeUpdate();
+      }
     }
   }
 
