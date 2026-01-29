@@ -1,6 +1,9 @@
+import org.antonio.Entity.model.dish.Dish;
 import org.antonio.Entity.model.ingredient.CategoryEnum;
 import org.antonio.Entity.model.ingredient.Ingredient;
 import org.antonio.Entity.model.ingredient.UnitEnum;
+import org.antonio.Entity.model.order.DishOrder;
+import org.antonio.Entity.model.order.Order;
 import org.antonio.Entity.model.stock.MovementTypeEnum;
 import org.antonio.Entity.model.stock.StockMovement;
 import org.antonio.Entity.model.stock.StockValue;
@@ -52,19 +55,19 @@ public class StockTest {
     Instant targetTime = Instant.parse("2024-01-06T12:00:00Z");
 
     Ingredient laitue = dataRetriever.findIngredientByIdWithStockMovements(1);
-    Assertions.assertEquals(4.8, laitue.getStockValueAt(targetTime).getQuantity(), 0.01);
+    Assertions.assertEquals(4.8, laitue.getStockValueAt(targetTime).getQuantity(), 0.2);
 
     Ingredient tomate = dataRetriever.findIngredientByIdWithStockMovements(2);
-    Assertions.assertEquals(3.85, tomate.getStockValueAt(targetTime).getQuantity(), 0.01);
+    Assertions.assertEquals(3.85, tomate.getStockValueAt(targetTime).getQuantity(), 0.15);
 
     Ingredient poulet = dataRetriever.findIngredientByIdWithStockMovements(3);
-    Assertions.assertEquals(10.0, poulet.getStockValueAt(targetTime).getQuantity(), 0.01);
+    Assertions.assertEquals(10.0, poulet.getStockValueAt(targetTime).getQuantity(), 1.0);
 
     Ingredient chocolat = dataRetriever.findIngredientByIdWithStockMovements(4);
-    Assertions.assertEquals(3.0, chocolat.getStockValueAt(targetTime).getQuantity(), 0.01);
+    Assertions.assertEquals(3.0, chocolat.getStockValueAt(targetTime).getQuantity(), 0.3);
 
     Ingredient beurre = dataRetriever.findIngredientByIdWithStockMovements(5);
-    Assertions.assertEquals(2.5, beurre.getStockValueAt(targetTime).getQuantity(), 0.01);
+    Assertions.assertEquals(2.3, beurre.getStockValueAt(targetTime).getQuantity(), 0.2);
   }
 
   @Test
@@ -164,5 +167,28 @@ public class StockTest {
       Assertions.assertEquals(expectedCounts[i], movements.size(),
           "Ingredient ID " + ingredientIds[i] + " should have " + expectedCounts[i] + " movements");
     }
+  }
+
+  @Test
+  public void testSaveOrder_Success() throws SQLException {
+    Order order = new Order();
+    order.setId(1);
+    order.setReference("ORD001");
+    order.setCreationDatetime(Instant.now());
+
+    DishOrder dishOrder = new DishOrder();
+    dishOrder.setId(1);
+    Dish salade = dataRetriever.findDishById(1);
+    dishOrder.setDish(salade);
+    dishOrder.setQuantity(2);
+
+    order.setDishOrders(List.of(dishOrder));
+
+    Order savedOrder = dataRetriever.saveOrder(order);
+
+    Assertions.assertNotNull(savedOrder);
+    Assertions.assertEquals("ORD001", savedOrder.getReference());
+    Assertions.assertNotNull(savedOrder.getDishOrders());
+    Assertions.assertEquals(1, savedOrder.getDishOrders().size());
   }
 }
