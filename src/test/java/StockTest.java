@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions;
 
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 public class StockTest {
@@ -113,5 +114,55 @@ public class StockTest {
     Ingredient retrieved = dataRetriever.findIngredientByIdWithStockMovements(1);
     Assertions.assertTrue(retrieved.getStockMovementList().stream()
         .anyMatch(m -> m.getId() == 11));
+  }
+
+  @Test
+  public void testFindStockMovementsByIngredientId() throws SQLException {
+    List<StockMovement> movements = dataRetriever.findStockMovementsByIngredientId(1);
+
+    Assertions.assertNotNull(movements);
+    Assertions.assertEquals(3, movements.size());
+
+    StockMovement movement1 = movements.get(0);
+    Assertions.assertEquals(1, movement1.getId());
+    Assertions.assertEquals(5.0, movement1.getValue().getQuantity(), 0.01);
+    Assertions.assertEquals(UnitEnum.KG, movement1.getValue().getUnit());
+    Assertions.assertEquals(MovementTypeEnum.IN, movement1.getType());
+    Assertions.assertNotNull(movement1.getCreationDatetime());
+
+    StockMovement movement2 = movements.get(1);
+    Assertions.assertEquals(2, movement2.getId());
+    Assertions.assertEquals(0.2, movement2.getValue().getQuantity(), 0.01);
+    Assertions.assertEquals(UnitEnum.KG, movement2.getValue().getUnit());
+    Assertions.assertEquals(MovementTypeEnum.OUT, movement2.getType());
+    Assertions.assertNotNull(movement2.getCreationDatetime());
+  }
+
+  @Test
+  public void testFindStockMovementsByIngredientId_EmptyList() throws SQLException {
+    Ingredient newIngredient = new Ingredient();
+    newIngredient.setId(99);
+    newIngredient.setName("Test without movement");
+    newIngredient.setPrice(1.0);
+    newIngredient.setCategory(CategoryEnum.VEGETABLE);
+    newIngredient.setStockMovementList(new ArrayList<>());
+
+    dataRetriever.saveIngredient(newIngredient);
+    List<StockMovement> movements = dataRetriever.findStockMovementsByIngredientId(99);
+
+    Assertions.assertNotNull(movements);
+    Assertions.assertTrue(movements.isEmpty());
+  }
+
+  @Test
+  public void testFindStockMovementsByIngredientId_AllIngredients() throws SQLException {
+    Integer[] ingredientIds = {1, 2, 3, 4, 5};
+    Integer[] expectedCounts = {3, 2, 2, 2, 2};
+
+    for (int i = 0; i < ingredientIds.length; i++) {
+      List<StockMovement> movements = dataRetriever.findStockMovementsByIngredientId(ingredientIds[i]);
+      Assertions.assertEquals(expectedCounts[i], movements.size(),
+          "Ingredient ID " + ingredientIds[i] + " should have " + expectedCounts[i] + " movements");
+    }
   }
 }
