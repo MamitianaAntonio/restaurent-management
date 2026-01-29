@@ -1,50 +1,52 @@
 package org.antonio;
 
+import org.antonio.Entity.model.order.Order;
+import org.antonio.Entity.model.order.PaymentStatus;
+import org.antonio.Entity.model.sale.Sale;
 import org.antonio.Entity.service.DataRetriever;
 import org.antonio.Entity.model.dish.Dish;
 import org.antonio.Entity.model.dish.DishTypeEnum;
 import org.antonio.Entity.model.ingredient.Ingredient;
 
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
   public static void main(String[] args) {
-    DataRetriever dataRetriever = new DataRetriever();
+    DataRetriever dr = new DataRetriever();
 
     try {
-      Dish salade = dataRetriever.findDishById(1);
-      System.out.println(salade);
+      // Vérifie que findOrderByReference marche
+      System.out.print("Testing findOrderByReference... ");
+      Order order = dr.findOrderByReference("ORD00001");
+      System.out.println("OK - Found order: " + order.getReference());
 
+      // Vérifie que createSaleFrom existe
+      System.out.print("Testing createSaleFrom method exists... ");
       try {
-        double costSalade = salade.getDishCost();
-        System.out.println("Coût de la salade : " + costSalade);
-      } catch (IllegalStateException e) {
-        System.out.println("Ingredient cost is null  : " + e.getMessage());
+        // Juste pour vérifier que la méthode existe
+        dr.getClass().getMethod("createSaleFrom", Order.class);
+        System.out.println("OK - Method exists");
+
+        // Tester rapidement
+        System.out.println("\nQuick test of createSaleFrom:");
+        System.out.println("Order status: " + order.getPaymentStatus());
+
+        try {
+          Sale sale = dr.createSaleFrom(order);
+          System.out.println("Result: Created sale ID " + sale.getId());
+        } catch (RuntimeException e) {
+          System.out.println("Result: " + e.getMessage());
+        }
+
+      } catch (NoSuchMethodException e) {
+        System.out.println("ERROR: Method doesn't exist!");
       }
 
-      System.out.println();
-      System.out.println("Dish creation");
-      Dish newSalade = new Dish();
-      newSalade.setName("Special salade");
-      newSalade.setDishType(DishTypeEnum.START);
-      newSalade.setPrice(500.0);
-      List<Ingredient> ingredients = new ArrayList<>();
-      Ingredient laitue = new Ingredient();
-      laitue.setId(1);
-      Ingredient tomate = new Ingredient();
-      tomate.setId(1);
-      ingredients.add(laitue);
-      ingredients.add(tomate);
-      newSalade.setIngredients(ingredients);
-
-      Dish savedDish = dataRetriever.saveDish(newSalade);
-      System.out.println(savedDish.getIngredients());
-      System.out.println("Saved dish : " + savedDish.getName() + " with ID " + savedDish.getId() + " and price : " + savedDish.getPrice());
-
-    } catch (SQLException e) {
-      throw new RuntimeException(e);
+    } catch (Exception e) {
+      System.out.println("ERROR: " + e.getMessage());
     }
   }
 }
