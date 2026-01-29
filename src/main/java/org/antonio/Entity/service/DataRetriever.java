@@ -13,7 +13,6 @@ import org.antonio.Entity.model.sale.Sale;
 import org.antonio.Entity.model.stock.MovementTypeEnum;
 import org.antonio.Entity.model.stock.StockMovement;
 import org.antonio.Entity.model.stock.StockValue;
-import org.postgresql.core.BaseConnection;
 
 import java.sql.*;
 import java.time.Instant;
@@ -601,14 +600,40 @@ public class DataRetriever {
     }
   }
 
+  private Order findOrderById(Integer id) {
+    String sql = "SELECT * FROM \"order\" WHERE id = ?";
+
+    try (Connection connection = DBConnection.getConnection()) {
+      PreparedStatement ps = connection.prepareStatement(sql);
+      ps.setInt(1, id);
+      ResultSet rs = ps.executeQuery();
+
+      if (rs.next()) {
+        return mapToOrder(rs);
+      }
+      return null;
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   // save order method
   public Order saveOrder(Order orderToSave) throws SQLException {
+    if (orderToSave.getId() > 0) {
+      Order existingOrder = findOrderById(orderToSave.getId());
+      if (existingOrder != null && existingOrder.getPaymentStatus() == PaymentStatus.PAID) {
+        throw new RuntimeException("Cannot modify order " +
+            orderToSave.getReference() +
+            " - already paid.");
+      }
+    }
+
     checkStockAvailability(orderToSave);
 
     String sqlOrder = """
-      INSERT INTO "order" (id, reference, creation_datetime)
-      VALUES (?, ?, ?) 
-      RETURNING id, reference, creation_datetime
+      INSERT INTO "order" (id, reference, creation_datetime, payement_status)
+      VALUES (?, ?, ?, ?::payment_status) 
+      RETURNING id, reference, creation_datetime, payment_status
     """;
 
     String sqlDishOrder = """
@@ -629,6 +654,12 @@ public class DataRetriever {
         orderStatement.setInt(1, orderToSave.getId());
         orderStatement.setString(2, orderToSave.getReference());
         orderStatement.setTimestamp(3, Timestamp.from(orderToSave.getCreationDatetime()));
+
+        PaymentStatus paymentStatus = orderToSave.getPaymentStatus();
+        if (paymentStatus == null) {
+          paymentStatus = PaymentStatus.UNPAID;
+        }
+        orderStatement.setString(4, orderToSave.getPaymentStatus().toString());
 
         try (ResultSet orderResultSet = orderStatement.executeQuery()) {
           if (orderResultSet.next()) {
@@ -676,7 +707,7 @@ public class DataRetriever {
   // methods to find command by reference
   public Order findOrderByReference(String reference) {
     String sqlQuery = """
-        SELECT id, reference, creation_datetime from "order" where reference like ?
+        SELECT id, reference, creation_datetime, payement_status from "order" where reference like ?
     """ ;
 
     DBConnection dbConnection = new DBConnection();
@@ -690,6 +721,10 @@ public class DataRetriever {
         order.setId(idOrder);
         order.setReference(resultSet.getString("reference"));
         order.setCreationDatetime(resultSet.getTimestamp("creation_datetime").toInstant());
+
+        String paymentStatus = resultSet.getString("payment_status").toString();
+        order.setPaymentStatus(PaymentStatus.valueOf(paymentStatus));
+
         order.setDishOrders(findDishOrderByIdOrder(idOrder));
         return order;
       }
@@ -730,6 +765,17 @@ public class DataRetriever {
    order.setId(rs.getInt("id"));
    order.setReference(rs.getString("reference"));
    order.setCreationDatetime(rs.getTimestamp("creation_datetime").toInstant());
+   PaymentStatus paymentStatus = PaymentStatus.valueOf(rs.getString("payment_status"));
+    try {
+      if (paymentStatus != null) {
+        order.setPaymentStatus(PaymentStatus.valueOf(String.valueOf(paymentStatus)));
+      } else {
+        order.setPaymentStatus(PaymentStatus.UNPAID);
+      }
+    } catch (IllegalArgumentException e) {
+      order.setPaymentStatus(PaymentStatus.UNPAID);
+    }
+
    return order;
   }
 
@@ -815,6 +861,68 @@ public class DataRetriever {
 
       DBConnection.closeConnection(connection);
       return null;
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public Sale createSaleFrom(Order order) {
+    if (order.getPaymentStatus() != PaymentStatus.PAID) {
+      throw new RuntimeException("Cannot create sale - order " +
+          order.getReference() + " is not paid.");
+    }
+
+    if (orderHasExistingSale(order.getId())) {
+      throw new RuntimeException("Cannot create sale - order " +
+          order.getReference() + " already has a sale.");
+    }
+
+    Sale sale = new Sale();
+    sale.setOrder(order);
+    sale.setSaleDateTime(Instant.now());
+
+    return saveSale(sale);
+  }
+
+  private boolean orderHasExistingSale(Integer orderId) {
+    String sql = "SELECT COUNT(*) FROM sale WHERE id_order = ?";
+
+    try (Connection connection = DBConnection.getConnection()) {
+      PreparedStatement ps = connection.prepareStatement(sql);
+      ps.setInt(1, orderId);
+      ResultSet rs = ps.executeQuery();
+
+      if (rs.next()) {
+        return rs.getInt(1) > 0;
+      }
+      return false;
+
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private Sale saveSale(Sale sale) {
+    String sql = """
+            INSERT INTO sale (sale_datetime, id_order) 
+            VALUES (?, ?)
+            RETURNING id, sale_datetime
+        """;
+
+    try (Connection connection = DBConnection.getConnection()) {
+      PreparedStatement ps = connection.prepareStatement(sql);
+      ps.setTimestamp(1, Timestamp.from(sale.getSaleDateTime()));
+      ps.setInt(2, sale.getOrder().getId());
+
+      ResultSet rs = ps.executeQuery();
+      if (rs.next()) {
+        sale.setId(rs.getInt("id"));
+        sale.setSaleDateTime(rs.getTimestamp("sale_datetime").toInstant());
+        return sale;
+      }
+
+      throw new RuntimeException("Failed to save sale");
+
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
