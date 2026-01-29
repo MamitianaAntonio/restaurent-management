@@ -6,3 +6,6 @@ CREATE TABLE sale (
     id_order int,
     CONSTRAINT fk_order FOREIGN KEY (id_order) REFERENCES "order"(id)
 );
+
+ALTER TABLE "order"
+    ADD COLUMN payment_status payment_status NOT NULL DEFAULT 'UNPAID';
