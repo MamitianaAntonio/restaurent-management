@@ -670,6 +670,58 @@ public class DataRetriever {
     }
   }
 
+  // methods to find command by reference
+  public Order findOrderByReference(String reference) {
+    String sqlQuery = """
+        SELECT id, reference, creation_datetime from "order" where reference like ?
+    """ ;
+
+    DBConnection dbConnection = new DBConnection();
+    try (Connection connection = dbConnection.getConnection()) {
+      PreparedStatement preparedStatement = connection.prepareStatement(sqlQuery);
+      preparedStatement.setString(1, reference);
+      ResultSet resultSet = preparedStatement.executeQuery();
+      if (resultSet.next()) {
+        Order order = new Order();
+        Integer idOrder = resultSet.getInt("id");
+        order.setId(idOrder);
+        order.setReference(resultSet.getString("reference"));
+        order.setCreationDatetime(resultSet.getTimestamp("creation_datetime").toInstant());
+        order.setDishOrders(findDishOrderByIdOrder(idOrder));
+        return order;
+      }
+      throw new RuntimeException("Order not found with reference " + reference);
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private List<DishOrder> findDishOrderByIdOrder(Integer idOrder) throws SQLException {
+    String sqlQuery = """
+     select id, id_dish, quantity from dish_order where dish_order.id_order = ?
+    """;
+
+    Connection connection = DBConnection.getConnection();
+    List<DishOrder> dishOrders = new ArrayList<>();
+    try {
+      PreparedStatement preparedStatement = connection.prepareStatement(sqlQuery);
+      preparedStatement.setInt(1, idOrder);
+      ResultSet resultSet = preparedStatement.executeQuery();
+      while (resultSet.next()) {
+        Dish dish = findDishById(resultSet.getInt("id_dish"));
+        DishOrder dishOrder = new DishOrder();
+        dishOrder.setId(resultSet.getInt("id"));
+        dishOrder.setQuantity(resultSet.getInt("quantity"));
+        dishOrder.setDish(dish);
+        dishOrders.add(dishOrder);
+      }
+      DBConnection.closeConnection(connection);
+      return dishOrders;
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private Order mapToOrder (ResultSet rs) throws SQLException {
    Order order = new Order();
    order.setId(rs.getInt("id"));

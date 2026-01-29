@@ -191,4 +191,22 @@ public class StockTest {
     Assertions.assertNotNull(savedOrder.getDishOrders());
     Assertions.assertEquals(1, savedOrder.getDishOrders().size());
   }
+
+  @Test
+  public void testFindOrderByReference_success() {
+    String reference = "ORD00001";
+
+    Order order = dataRetriever.findOrderByReference(reference);
+
+    Assertions.assertNotNull(order);
+    Assertions.assertEquals(reference, order.getReference());
+    Assertions.assertNotNull(order.getCreationDatetime());
+
+    Assertions.assertNotNull(order.getDishOrders());
+    Assertions.assertFalse(order.getDishOrders().isEmpty());
+
+    DishOrder dishOrder = order.getDishOrders().get(0);
+    Assertions.assertNotNull(dishOrder.getDish());
+    Assertions.assertTrue(dishOrder.getQuantity() > 0);
+  }
 }
