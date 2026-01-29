@@ -16,6 +16,7 @@ public class Order {
   private String reference;
   private Instant creationDatetime;
   private List<DishOrder> dishOrders;
+  private Payment_status paymentStatus;
 
   // method to get total of amount : value added tax
   public Double getTotalAmountWithoutVAT () {
