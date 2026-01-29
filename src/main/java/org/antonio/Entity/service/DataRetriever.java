@@ -707,7 +707,7 @@ public class DataRetriever {
   // methods to find command by reference
   public Order findOrderByReference(String reference) {
     String sqlQuery = """
-        SELECT id, reference, creation_datetime, payement_status from "order" where reference like ?
+        SELECT id, reference, creation_datetime, payment_status from "order" where reference like ?
     """ ;
 
     DBConnection dbConnection = new DBConnection();
