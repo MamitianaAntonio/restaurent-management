@@ -1,6 +1,6 @@
 package org.antonio.Entity.model.order;
 
-public enum Payment_status {
+public enum PaymentStatus {
   UNPAID,
   PAID
 }

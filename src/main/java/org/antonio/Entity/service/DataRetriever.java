@@ -8,9 +8,12 @@ import org.antonio.Entity.model.ingredient.Ingredient;
 import org.antonio.Entity.model.ingredient.UnitEnum;
 import org.antonio.Entity.model.order.DishOrder;
 import org.antonio.Entity.model.order.Order;
+import org.antonio.Entity.model.order.PaymentStatus;
+import org.antonio.Entity.model.sale.Sale;
 import org.antonio.Entity.model.stock.MovementTypeEnum;
 import org.antonio.Entity.model.stock.StockMovement;
 import org.antonio.Entity.model.stock.StockValue;
+import org.postgresql.core.BaseConnection;
 
 import java.sql.*;
 import java.time.Instant;
@@ -765,6 +768,53 @@ public class DataRetriever {
       }
       DBConnection.closeConnection(connection);
       return stockMovementList;
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+
+  // find sale by id method
+  public Sale findSaleById (int saleId) throws SQLException {
+    String sqlQuery = """
+      SELECT
+          s.id AS sale_id,
+          s.sale_datetime,
+          o.id AS order_id,
+          o.reference,
+          o.payment_status
+      FROM sale s
+      JOIN orders o ON s.order_id = o.id
+      WHERE s.id = ?
+    """;
+
+    Connection connection = null;
+    try {
+      connection = DBConnection.getConnection();
+      PreparedStatement saleStatement = connection.prepareStatement(sqlQuery);
+      saleStatement.setInt(1, saleId);
+      ResultSet rs = saleStatement.executeQuery();
+
+      if (rs.next()) {
+        Order order = new Order();
+        order.setId(rs.getInt("order_id"));
+        order.setReference(rs.getString("reference"));
+        order.setPaymentStatus(
+            PaymentStatus.valueOf(rs.getString("payment_status"))
+        );
+
+        Sale sale = new Sale();
+        sale.setId(rs.getInt("sale_id"));
+        sale.setSaleDateTime(
+            rs.getTimestamp("sale_datetime").toInstant()
+        );
+        sale.setOrder(order);
+
+        return sale;
+      }
+
+      DBConnection.closeConnection(connection);
+      return null;
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
